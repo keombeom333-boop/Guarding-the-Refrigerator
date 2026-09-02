@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>냉장 인벤토리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1B1F2A; --panel:#242A38; --slot:#2E3547; --slotBorder:#3A4257;
+    --text:#F2F0E9; --textDim:#9AA3B5; --accent:#5FD0C0; --gold:#E8B84D;
+    --red:#FF5F56; --yellow:#F2C230; --green:#3DD68C;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    font-family:'Inter', sans-serif;
+    background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    padding:16px 0;
+  }
+  #stage{ display:flex; align-items:center; justify-content:center; width:100%; }
+  #phone{
+    width:380px; height:720px; background:var(--bg);
+    border-radius:34px; border:6px solid #10131C;
+    box-shadow:0 20px 50px rgba(0,0,0,0.45);
+    position:relative; display:flex; flex-direction:column; overflow:hidden;
+  }
+  #notch{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:120px; height:20px; background:#10131C;
+    border-bottom-left-radius:14px; border-bottom-right-radius:14px; z-index:5;
+  }
+  #screenArea{ flex:1; display:flex; flex-direction:column; overflow:hidden; padding-top:20px; }
+  .pad{ flex:1; display:flex; flex-direction:column; padding:16px 18px 20px; overflow:hidden; }
+
+  .brand-row{ display:flex; align-items:center; gap:8px; margin-top:6px; font-size:20px; }
+  .brand-text{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; color:var(--text); }
+  .brand-sub{ color:var(--textDim); font-size:13px; margin-top:4px; }
+
+  .menu-list{ margin-top:28px; display:flex; flex-direction:column; gap:14px; }
+  .menu-card{
+    display:flex; align-items:center; gap:14px; background:var(--panel);
+    border:1px solid var(--slotBorder); border-radius:18px; padding:16px;
+    cursor:pointer; text-align:left; width:100%; font-family:inherit;
+  }
+  .menu-icon{
+    width:46px; height:46px; border-radius:12px; background:var(--slot);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:22px;
+  }
+  .menu-title{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:600; color:var(--text); }
+  .menu-desc{ font-size:12.5px; color:var(--textDim); margin-top:2px; }
+
+  .top-bar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .back-btn{
+    width:32px; height:32px; border-radius:10px; background:var(--panel);
+    border:1px solid var(--slotBorder); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text); font-size:15px;
+  }
+  .top-bar-title{ font-family:'Baloo 2',sans-serif; font-size:17px; font-weight:600; color:var(--text); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:6px; }
+
+  .storage-tile{
+    background:var(--panel); border:1px solid var(--slotBorder); border-radius:16px;
+    padding:22px 8px; display:flex; flex-direction:column; align-items:center; gap:8px;
+    cursor:pointer; font-family:inherit;
+  }
+  .storage-tile span.ic{ font-size:26px; }
+  .storage-tile-label{ font-size:13.5px; color:var(--text); font-weight:500; }
+
+  .inv-header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .timer-box{ background:var(--panel); border:1px solid var(--slotBorder); border-radius:14px; padding:8px 12px; min-width:84px; }
+  .timer-label{ font-size:10.5px; color:var(--textDim); }
+  .timer-value{ font-family:'Baloo 2',sans-serif; font-size:20px; font-weight:700; margin-top:2px; }
+  .legend-box{ background:var(--panel); border:1px solid var(--slotBorder); border-radius:14px; padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--textDim); }
+  .legend-dot{ width:8px; height:8px; border-radius:4px; flex-shrink:0; display:inline-block; }
+  .legend-count{ color:var(--text); font-weight:600; margin-left:2px; }
+
+  .inv-title{ font-family:'Baloo 2',sans-serif; font-size:15px; color:var(--text); margin:14px 0 10px; }
+  .inv-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow-y:auto; padding-bottom:8px; }
+  .slot{
+    background:var(--slot); border:2px solid; border-radius:14px; padding:10px 6px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .slot-emoji{ font-size:24px; }
+  .slot-photo{ width:40px; height:40px; border-radius:10px; object-fit:cover; }
+  .slot-name{ font-size:11.5px; color:var(--text); text-align:center; line-height:1.2; }
+  .slot-dday{ font-size:11px; font-weight:700; }
+
+  .exit-dock{ display:flex; justify-content:center; margin-top:12px; }
+  .exit-btn{
+    background:var(--gold); color:#1B1F2A; border:none; border-radius:14px;
+    padding:10px 34px; font-weight:700; font-size:13.5px; cursor:pointer; font-family:inherit;
+  }
+
+  .search-row{
+    display:flex; align-items:center; gap:8px; background:var(--panel);
+    border:1px solid var(--slotBorder); border-radius:14px; padding:8px 10px; margin-top:10px;
+  }
+  .search-row input{
+    flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:13.5px; font-family:inherit;
+  }
+  .search-clear{ background:transparent; border:none; color:var(--textDim); cursor:pointer; font-size:14px; }
+  .search-go{
+    background:var(--accent); color:#12261F; border:none; border-radius:10px;
+    padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+
+  .recipe-results{ margin-top:16px; flex:1; overflow-y:auto; }
+  .recipe-card{ background:var(--panel); border:1px solid var(--slotBorder); border-radius:16px; padding:14px 16px; margin-bottom:12px; }
+  .recipe-name{ font-family:'Baloo 2',sans-serif; font-size:15.5px; color:var(--text); font-weight:600; }
+  .recipe-line{ font-size:12.5px; color:var(--textDim); margin-top:6px; line-height:1.5; }
+  .recipe-line b.ok{ color:var(--green); font-weight:600; }
+  .recipe-line b.miss{ color:var(--red); font-weight:600; }
+  .steps-list{ margin-top:10px; padding-left:18px; color:var(--text); font-size:12.5px; line-height:1.7; }
+
+  .center{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .spin{ animation:spin 1s linear infinite; display:inline-block; font-size:22px; }
+  @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  .photo-frame{
+    margin-top:14px; background:var(--panel); border:1px dashed var(--slotBorder); border-radius:18px;
+    height:260px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .photo-frame img{ width:100%; height:100%; object-fit:cover; }
+
+  .secondary-btn{
+    margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--panel); border:1px solid var(--slotBorder); color:var(--text);
+    border-radius:14px; padding:12px; font-size:13.5px; cursor:pointer; font-family:inherit; width:100%;
+  }
+  .primary-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--gold); border:none; color:#1B1F2A; border-radius:14px;
+    padding:13px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; width:100%;
+  }
+  .primary-btn:disabled{ opacity:0.4; cursor:default; }
+
+  .form-thumb{ width:64px; height:64px; border-radius:12px; object-fit:cover; }
+  .field-label{ font-size:12px; color:var(--textDim); margin-bottom:6px; margin-top:18px; }
+  .field-label:first-child{ margin-top:0; }
+  .text-input{
+    width:100%; background:var(--panel); border:1px solid var(--slotBorder); border-radius:12px;
+    padding:11px 12px; color:var(--text); font-size:13.5px; outline:none; font-family:inherit;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(0.7); }
+
+  .loc-chip{
+    display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--panel);
+    border:1px solid var(--slotBorder); border-radius:12px; padding:10px 4px; color:var(--text);
+    font-size:11.5px; cursor:pointer; font-family:inherit;
+  }
+  .loc-chip .ic{ font-size:17px; }
+  .loc-chip.active{ background:var(--accent); color:var(--bg); border-color:var(--accent); }
+
+  #toast{
+    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#10131C; color:var(--text); padding:10px 18px; border-radius:12px;
+    font-size:12.5px; border:1px solid var(--slotBorder); z-index:20; display:none;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="phone">
+    <div id="notch"></div>
+    <div id="screenArea"><div id="app"></div></div>
+    <div id="toast"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- 설정값 ---------------- */
+const LOCATIONS = [
+  { key:"fridge", label:"냉장고", ic:"🧊" },
+  { key:"freezer", label:"냉동실", ic:"❄️" },
+  { key:"room", label:"실온보관", ic:"☀️" },
+];
+const STORAGE_KEY = "fridge_inventory_foods_v1";
+const FOOD_EMOJI = ["🥚","🥕","🥦","🍅","🧀","🥩","🍗","🐟","🥛","🧈","🍞","🍎","🍌","🧄","🧅","🌶️","🍄","🥔","🍚","🥫"];
+function emojiFor(name){
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0;
+  return FOOD_EMOJI[h % FOOD_EMOJI.length];
+}
+
+/* ---------------- 날짜 유틸 ---------------- */
+function todayISO(){ const d=new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+function diffDays(expiry){ const a=new Date(todayISO()); const b=new Date(expiry); return Math.round((b-a)/86400000); }
+function freshState(expiry){ const d=diffDays(expiry); if(d<=3) return "red"; if(d<=7) return "yellow"; return "green"; }
+function ddayLabel(expiry){ const d=diffDays(expiry); if(d===0) return "D-DAY"; if(d>0) return `D-${d}`; return `D+${Math.abs(d)}`; }
+const STATE_COLOR = { red:"var(--red)", yellow:"var(--yellow)", green:"var(--green)" };
+
+/* ---------------- Claude API 호출 ---------------- */
+async function askClaude(promptText){
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens:1000,
+      messages:[{ role:"user", content: promptText }],
+    }),
+  });
+  const data = await response.json();
+  const text = (data.content||[]).map(b=>b.type==="text"?b.text:"").join("\n").trim();
+  const cleaned = text.replace(/```json|```/g,"").trim();
+  return JSON.parse(cleaned);
+}
+
+/* ---------------- 상태 ---------------- */
+let state = {
+  screen: "home",
+  locationFilter: "all",
+  foods: [],
+  loaded: false,
+  recipe: { query:"", status:"idle", mode:"recommend", recs:null, searchResult:null },
+  pendingPhoto: null,
+  formLocation: "fridge",
+};
+
+async function init(){
+  try{
+    if(window.storage){
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value) state.foods = JSON.parse(res.value);
+    }
+  }catch(e){ /* 저장된 데이터 없음 */ }
+  state.loaded = true;
+  render();
+}
+
+async function persistFoods(){
+  try{
+    if(window.storage) await window.storage.set(STORAGE_KEY, JSON.stringify(state.foods), false);
+  }catch(e){ console.error("저장 실패", e); }
+}
+
+let toastTimer=null;
+function showToast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.style.display="block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.display="none"; }, 2200);
+}
+
+/* ---------------- 렌더 ---------------- */
+function render(){
+  const app = document.getElementById("app");
+  if(!state.loaded){ app.innerHTML = centerLoading("인벤토리 불러오는 중"); return; }
+  if(state.screen==="home") app.innerHTML = renderHome();
+  else if(state.screen==="storageSelect") app.innerHTML = renderStorageSelect();
+  else if(state.screen==="foodList") app.innerHTML = renderFoodList();
+  else if(state.screen==="recipe") app.innerHTML = renderRecipe();
+  else if(state.screen==="registerPhoto") app.innerHTML = renderRegisterPhoto();
+  else if(state.screen==="registerForm") app.innerHTML = renderRegisterForm();
+}
+
+function topBar(title, exitCall, exitLabel){
+  return `<div class="top-bar">
+    <button class="back-btn" onclick="${exitCall}">←</button>
+    <span class="top-bar-title">${title}</span>
+    <span style="width:18px"></span>
+  </div>`;
+}
+function centerLoading(label, small){
+  return `<div class="pad"><div class="center" style="height:${small?160:'100%'}">
+    <span class="spin">⏳</span>
+    <span style="color:var(--textDim);font-size:13px;margin-top:10px">${label}</span>
+  </div></div>`;
+}
+function emptyState(text, icon){
+  return `<div class="center" style="height:200px">
+    <span style="font-size:24px">${icon||"📦"}</span>
+    <span style="color:var(--textDim);font-size:13px;margin-top:10px;text-align:center;line-height:1.5;max-width:220px">${text}</span>
+  </div>`;
+}
+
+/* ---- 홈 ---- */
+function renderHome(){
+  return `<div class="pad">
+    <div class="brand-row">🧊<span class="brand-text">냉장 인벤토리</span></div>
+    <p class="brand-sub">오늘의 재료를 아이템처럼 관리해요</p>
+    <div class="menu-list">
+      <button class="menu-card" onclick="nav('storageSelect')">
+        <div class="menu-icon">🔎</div>
+        <div><div class="menu-title">음식 확인</div><div class="menu-desc">보관 중인 재료 살펴보기</div></div>
+      </button>
+      <button class="menu-card" onclick="enterRecipe()">
+        <div class="menu-icon">👨‍🍳</div>
+        <div><div class="menu-title">레시피</div><div class="menu-desc">만들 수 있는 요리 추천</div></div>
+      </button>
+      <button class="menu-card" onclick="nav('registerPhoto')">
+        <div class="menu-icon">📦</div>
+        <div><div class="menu-title">간편등록</div><div class="menu-desc">사진 찍고 바로 등록</div></div>
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ---- 보관장소 선택 ---- */
+function renderStorageSelect(){
+  const tiles = [{key:"all",label:"전체",ic:"🔎"}, ...LOCATIONS];
+  return `<div class="pad">
+    ${topBar("음식 확인","nav('home')")}
+    <div class="grid2">
+      ${tiles.map(t=>`
+        <button class="storage-tile" onclick="selectLocation('${t.key}')">
+          <span class="ic">${t.ic}</span>
+          <span class="storage-tile-label">${t.label}</span>
+        </button>`).join("")}
+    </div>
+  </div>`;
+}
+function selectLocation(loc){ state.locationFilter = loc; nav("foodList"); }
+
+/* ---- 음식 목록 ---- */
+function renderFoodList(){
+  const list = state.foods.filter(f => state.locationFilter==="all" || f.location===state.locationFilter);
+  const withState = list.map(f => ({...f, state: freshState(f.expiry), days: diffDays(f.expiry)}));
+  const soonest = withState.length ? withState.reduce((a,b)=> a.days<b.days?a:b) : null;
+  const counts = {red:0,yellow:0,green:0};
+  withState.forEach(f=>counts[f.state]++);
+  const title = state.locationFilter==="all" ? "전체 재료" : (LOCATIONS.find(l=>l.key===state.locationFilter)||{}).label;
+
+  return `<div class="pad">
+    <div class="inv-header-row">
+      <div class="timer-box">
+        <div class="timer-label">임박 항목</div>
+        <div class="timer-value" style="color:${soonest?STATE_COLOR[soonest.state]:'var(--textDim)'}">${soonest?ddayLabel(soonest.expiry):"—"}</div>
+      </div>
+      <div class="legend-box">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span><span>3일 이내</span><span class="legend-count">${counts.red}</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span><span>7일 이내</span><span class="legend-count">${counts.yellow}</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span><span>그 외</span><span class="legend-count">${counts.green}</span></div>
+      </div>
+    </div>
+    <div class="inv-title">${title}</div>
+    ${withState.length===0
+      ? emptyState("아직 등록된 재료가 없어요. 간편등록으로 추가해보세요.")
+      : `<div class="inv-grid">${withState.map(f=>`
+          <div class="slot" style="border-color:${STATE_COLOR[f.state]}">
+            ${f.photo
+              ? `<img class="slot-photo" src="${f.photo}" alt="${f.name}" />`
+              : `<div class="slot-emoji">${emojiFor(f.name)}</div>`
+            }
+            <div class="slot-name">${f.name}</div>
+            <div class="slot-dday" style="color:${STATE_COLOR[f.state]}">${ddayLabel(f.expiry)}</div>
+          </div>`).join("")}</div>`
+    }
+    <div class="exit-dock"><button class="exit-btn" onclick="nav('storageSelect')">나가기</button></div>
+  </div>`;
+}
+
+/* ---- 레시피 ---- */
+function enterRecipe(){
+  state.screen = "recipe";
+  state.recipe = { query:"", status:"idle", mode:"recommend", recs:null, searchResult:null };
+  render();
+  loadRecommendations();
+}
+async function loadRecommendations(){
+  const names = state.foods.map(f=>f.name);
+  state.recipe.status="loading"; state.recipe.mode="recommend"; render();
+  if(names.length===0){ state.recipe.recs=[]; state.recipe.status="idle"; render(); return; }
+  try{
+    const prompt = `다음은 냉장고 재고 재료 목록이다: ${names.join(", ")}.
+이 재료들로 지금 바로 만들 수 있거나 재료가 조금만 더 있으면 만들 수 있는 요리를 3~5개 추천해줘.
+반드시 아래 JSON 배열 형식으로만 답하고 다른 설명은 절대 붙이지 마라.
+[{"name":"요리명","usedIngredients":["보유 중인 재료"],"missingIngredients":["부족한 재료"]}]`;
+    const result = await askClaude(prompt);
+    state.recipe.recs = Array.isArray(result) ? result : [];
+    state.recipe.status = "idle";
+  }catch(e){ state.recipe.status="error"; }
+  render();
+}
+async function runSearch(){
+  const input = document.getElementById("recipeSearchInput");
+  const q = input ? input.value.trim() : "";
+  if(!q) return;
+  state.recipe.query = q; state.recipe.status="loading"; state.recipe.mode="search"; render();
+  const names = state.foods.map(f=>f.name);
+  try{
+    const prompt = `사용자가 "${q}"라는 요리를 만들고 싶어한다.
+사용자의 현재 냉장고 재료는 다음과 같다: ${names.join(", ")||"없음"}.
+이 요리에 대한 레시피를 이 재료를 최대한 활용해서 알려줘. 핵심 재료 중 냉장고에 없는 재료가 있으면 반드시 짚어줘.
+반드시 아래 JSON 형식으로만 답하고 다른 설명은 붙이지 마라.
+{"name":"요리명","usedIngredients":["보유 중인 재료"],"missingIngredients":["부족한 핵심 재료"],"steps":["조리 순서 1","조리 순서 2"]}`;
+    const result = await askClaude(prompt);
+    state.recipe.searchResult = result;
+    state.recipe.status = "idle";
+  }catch(e){ state.recipe.status="error"; }
+  render();
+}
+function clearSearch(){
+  state.recipe.query=""; state.recipe.searchResult=null; state.recipe.mode="recommend"; render();
+}
+function recipeCard(r, withSteps){
+  const used = (r.usedIngredients||[]);
+  const missing = (r.missingIngredients||[]);
+  return `<div class="recipe-card">
+    <div class="recipe-name">${r.name||""}</div>
+    ${used.length ? `<div class="recipe-line"><b class="ok">보유</b> ${used.join(", ")}</div>`:""}
+    ${missing.length ? `<div class="recipe-line"><b class="miss">부족</b> ${missing.join(", ")}</div>` : (!withSteps?`<div class="recipe-line" style="color:var(--green)">바로 만들 수 있어요</div>`:"")}
+    ${withSteps && (r.steps||[]).length ? `<ol class="steps-list">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol>` : ""}
+  </div>`;
+}
+function renderRecipe(){
+  const rc = state.recipe;
+  let resultsHtml = "";
+  if(rc.status==="loading"){
+    resultsHtml = centerLoadingInline(rc.mode==="search" ? "레시피 분석 중" : "재료 분석 중");
+  } else if(rc.status==="error"){
+    resultsHtml = emptyState("추천을 불러오지 못했어요. 다시 시도해주세요.", "⚠️");
+  } else if(rc.mode==="search" && rc.searchResult){
+    resultsHtml = recipeCard(rc.searchResult, true);
+  } else if(rc.mode==="recommend"){
+    const names = state.foods.map(f=>f.name);
+    if(names.length===0) resultsHtml = emptyState("등록된 재료가 없어요. 먼저 재료를 등록해보세요.");
+    else if(rc.recs && rc.recs.length===0) resultsHtml = emptyState("지금 재료로는 추천할 요리를 찾지 못했어요.");
+    else resultsHtml = (rc.recs||[]).map(r=>recipeCard(r,false)).join("");
+  }
+  return `<div class="pad">
+    ${topBar("레시피","nav('home')")}
+    <div class="search-row">
+      <span>🔍</span>
+      <input id="recipeSearchInput" placeholder="만들고 싶은 음식 검색" value="${rc.query.replace(/"/g,'&quot;')}"
+        onkeydown="if(event.key==='Enter') runSearch();" />
+      ${rc.query ? `<button class="search-clear" onclick="clearSearch()">✕</button>` : ""}
+      <button class="search-go" onclick="runSearch()">검색</button>
+    </div>
+    <div class="recipe-results">${resultsHtml}</div>
+  </div>`;
+}
+function centerLoadingInline(label){
+  return `<div class="center" style="height:160px">
+    <span class="spin">⏳</span>
+    <span style="color:var(--textDim);font-size:13px;margin-top:10px">${label}</span>
+  </div>`;
+}
+
+/* ---- 간편등록: 사진 ---- */
+function renderRegisterPhoto(){
+  return `<div class="pad">
+    ${topBar("간편등록","nav('home')")}
+    <div class="photo-frame" id="photoFrame">
+      ${state.pendingPhoto
+        ? `<img src="${state.pendingPhoto}" alt="촬영된 재료" />`
+        : `<div class="center"><span style="font-size:34px">📷</span><span style="color:var(--textDim);font-size:13px;margin-top:8px">재료 사진을 찍어주세요</span></div>`
+      }
+    </div>
+    <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFile(event)" />
+    <button class="secondary-btn" onclick="document.getElementById('photoInput').click()">📷 ${state.pendingPhoto?"다시 촬영":"촬영하기"}</button>
+    <button class="primary-btn" style="margin-top:auto" ${state.pendingPhoto?"":"disabled"} onclick="confirmPhoto()">등록</button>
+  </div>`;
+}
+function handlePhotoFile(evt){
+  const file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 480/img.width);
+      canvas.width = img.width*scale; canvas.height = img.height*scale;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      state.pendingPhoto = canvas.toDataURL("image/jpeg",0.7);
+      render();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function confirmPhoto(){ if(!state.pendingPhoto) return; nav("registerForm"); }
+
+/* ---- 간편등록: 정보 입력 ---- */
+function defaultExpiry(){
+  const d = new Date(); d.setDate(d.getDate()+7); return d.toISOString().slice(0,10);
+}
+function renderRegisterForm(){
+  state.formLocation = state.formLocation || "fridge";
+  return `<div class="pad">
+    ${topBar("정보 입력","cancelRegister()")}
+    <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+      ${state.pendingPhoto ? `<img class="form-thumb" src="${state.pendingPhoto}" />` : ""}
+      <div style="flex:1">
+        <div class="field-label" style="margin-top:0">음식 이름</div>
+        <input id="foodNameInput" class="text-input" placeholder="예: 계란" />
+      </div>
+    </div>
+    <div class="field-label">유통기한</div>
+    <input id="foodExpiryInput" type="date" class="text-input" value="${defaultExpiry()}" />
+    <div class="field-label">보관 장소</div>
+    <div class="grid3" id="locChipRow">
+      ${LOCATIONS.map(l=>`
+        <button type="button" class="loc-chip ${state.formLocation===l.key?"active":""}" data-loc="${l.key}" onclick="selectLocationChip(this,'${l.key}')">
+          <span class="ic">${l.ic}</span><span>${l.label}</span>
+        </button>`).join("")}
+    </div>
+    <button class="primary-btn" style="margin-top:auto" onclick="submitRegister()">✓ 최종 등록</button>
+  </div>`;
+}
+function selectLocationChip(el, loc){
+  state.formLocation = loc;
+  document.querySelectorAll("#locChipRow .loc-chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+}
+function cancelRegister(){ state.pendingPhoto=null; state.formLocation="fridge"; nav("home"); }
+async function submitRegister(){
+  const name = (document.getElementById("foodNameInput").value||"").trim();
+  const expiry = document.getElementById("foodExpiryInput").value;
+  if(!name || !expiry){ showToast("음식 이름과 유통기한을 입력해주세요"); return; }
+  const food = { id: `${Date.now()}`, name, expiry, location: state.formLocation, photo: state.pendingPhoto };
+  state.foods.push(food);
+  await persistFoods();
+  showToast(`${name} 등록 완료`);
+  state.pendingPhoto=null; state.formLocation="fridge";
+  nav("home");
+}
+
+/* ---- 네비게이션 ---- */
+function nav(screen){ state.screen = screen; render(); }
+
+init();
+</script>
+</body>
+</html>
